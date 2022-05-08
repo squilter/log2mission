@@ -5,7 +5,7 @@ from rdp import rdp
 import sys
 import csv
 
-def parse_path(log):
+def parse_log(log):
     path = []
     while True:
         m = log.recv_match(type='AHR2')
@@ -13,11 +13,7 @@ def parse_path(log):
             break
         m = m.to_dict()
         path.append([m['Lat'], m['Lng'], m['Alt']])
-
     return path
-
-def parse_home(log):
-    return {"Lat": 123, "Lng": 456, "Alt": 789} # todo
 
 if __name__ == "__main__":
     filename = sys.argv[1]
@@ -26,8 +22,10 @@ if __name__ == "__main__":
     else:
         log = DFReader_binary(filename)
 
-    path = parse_path(log)
-    home = parse_home(log)
+    path = parse_log(log)
+
+    # Use the first waypoint in the log as the new home
+    home = {'Lat': path[0][0], 'Lng': path[0][1], 'Alt': path[0][2]}
 
     # This method does not work near the north or south poles
     simplified_path = rdp(path, epsilon = 0.0001)
