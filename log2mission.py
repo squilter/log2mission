@@ -20,6 +20,15 @@ def parse_log(log):
         alt.append(m['Alt'])
     return lat, lon, alt
 
+def write_mission(lat, lon, alt):
+    with open('mission.txt', 'w') as f:
+        f.write("QGC WPL 110\n")
+        writer = csv.writer(f, delimiter='\t')
+        # Use the first waypoint in the log as the new home
+        writer.writerow([0, 1, 0, 16, 0, 0, 0, 0, lat[0], lon[0], alt[0], 1])
+        for index, [lat, lon, alt] in enumerate(zip(lat, lon, alt)):
+            writer.writerow([index+1, 0, 0, 16, 0, 0, 0, 0, lat, lon, alt, 1])
+
 if __name__ == "__main__":
     filename = sys.argv[1]
     if filename.endswith('.log'):
@@ -29,20 +38,10 @@ if __name__ == "__main__":
 
     lat, lon, alt = parse_log(log)
 
-    # Use the first waypoint in the log as the new home
-    home = {'Lat': lat[0], 'Lng': lon[1], 'Alt': alt[2]}
-
     path_ecef = navpy.lla2ecef(lat, lon, alt, latlon_unit='deg', alt_unit='m', model='wgs84')
-
-    simplified_path_ecef = rdp(path_ecef, epsilon = 0.5)
-
+    simplified_path_ecef = rdp(path_ecef, epsilon = 1.3)
     lat_simplified, lon_simplified, alt_simplified = navpy.ecef2lla(simplified_path_ecef, latlon_unit='deg')
-    
+
     print(f"Simplified from {len(lat)} to {len(lat_simplified)} points.")
 
-    with open('mission.txt', 'w') as f:
-        f.write("QGC WPL 110\n")
-        writer = csv.writer(f, delimiter='\t')
-        writer.writerow([0, 1, 0, 16, 0, 0, 0, 0, home['Lat'], home['Lng'], home['Alt'], 1])
-        for index, [lat, lon, alt] in enumerate(zip(lat_simplified, lon_simplified, alt_simplified)):
-            writer.writerow([index+1, 0, 3, 16, 0, 0, 0, 0, lat, lon, alt, 1])
+    write_mission(lat_simplified, lon_simplified, alt_simplified)
