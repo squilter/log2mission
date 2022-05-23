@@ -38,9 +38,24 @@ if __name__ == "__main__":
 
     lat, lon, alt = parse_log(log)
 
-    path_ecef = navpy.lla2ecef(lat, lon, alt, latlon_unit='deg', alt_unit='m', model='wgs84')
+    # Put all points at alt = 0, so the algorithm only simplifies the path as seen from above
+    # Note that this introduces a risk of a straight-line path that actually changes altitude where this altitude change is lost.
+    path_ecef = navpy.lla2ecef(lat, lon, [0] * len(lat), latlon_unit='deg', alt_unit='m', model='wgs84')
     simplified_path_ecef = rdp(path_ecef, epsilon = 1.3)
-    lat_simplified, lon_simplified, alt_simplified = navpy.ecef2lla(simplified_path_ecef, latlon_unit='deg')
+    lat_simplified, lon_simplified, _ = navpy.ecef2lla(simplified_path_ecef, latlon_unit='deg')
+
+    alt_simplified = []
+    latlons = list(zip(lat, lon))
+    # Figure out what altitude was associated with the points that were kept
+    for latlon_simplified in zip(lat_simplified, lon_simplified):
+        idx = None
+        for i, latlon in enumerate(latlons):
+            if abs(latlon[0] - latlon_simplified[0]) + abs(latlon[1] - latlon_simplified[1]) < 0.0000000001:
+                idx = i
+                break
+        alt_simplified.append(alt[idx])
+
+    assert len(alt_simplified) == len(lat_simplified), "Something went horribly wrong with altitude reconstruction..."
 
     print(f"Simplified from {len(lat)} to {len(lat_simplified)} points.")
 
