@@ -29,8 +29,26 @@ def write_mission(lat, lon, alt):
         for index, [lat, lon, alt] in enumerate(zip(lat, lon, alt)):
             writer.writerow([index+1, 0, 0, 16, 0, 0, 0, 0, lat, lon, alt, 1])
 
+#  Check the the argument is a float
+def isfloat(num):
+    try:
+        float(num) # try to make float
+        return True
+    except ValueError: # if fails number is not float
+        return False
+
+    
+    
 if __name__ == "__main__":
     filename = sys.argv[1]
+    
+    eps = 1.3 # Default epsilon value
+
+    if len(sys.argv) >= 3 : # if second argv is present
+        if isfloat(sys.argv[2]): 
+            eps = float(sys.argv[2])
+        
+    
     if filename.endswith('.log'):
         log = DFReader_text(filename)
     else:
@@ -41,7 +59,7 @@ if __name__ == "__main__":
     # Put all points at alt = 0, so the algorithm only simplifies the path as seen from above
     # Note that this introduces a risk of a straight-line path that actually changes altitude where this altitude change is lost.
     path_ecef = navpy.lla2ecef(lat, lon, [0] * len(lat), latlon_unit='deg', alt_unit='m', model='wgs84')
-    simplified_path_ecef = rdp(path_ecef, epsilon = 1.3)
+    simplified_path_ecef = rdp(path_ecef, epsilon = eps)
     lat_simplified, lon_simplified, _ = navpy.ecef2lla(simplified_path_ecef, latlon_unit='deg')
 
     alt_simplified = []
